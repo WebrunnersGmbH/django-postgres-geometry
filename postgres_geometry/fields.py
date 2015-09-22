@@ -74,17 +74,18 @@ class Point(object):
         return unicode(self.__str__())
 
     def __eq__(self, other):
-        return (isinstance(other, self.__class__)
-                and self.x == other.x
-                and self.y == other.y)
+        return (
+            isinstance(other, self.__class__) and
+            self.x == other.x and
+            self.y == other.y)
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __lt__(self, other):
-        return (isinstance(other, self.__class__)
-                and self.x <= other.x
-                and self.y <= other.y)
+        return (isinstance(other, self.__class__) and
+                self.x <= other.x and
+                self.y <= other.y)
 
 
 class Circle(object):
@@ -149,9 +150,9 @@ class Circle(object):
             raise TypeError("Invalid set of arguments {}".format(args))
 
     def __eq__(self, other):
-        return (isinstance(other, Circle)
-                and self.center == other.center
-                and self.radius == other.radius)
+        return (isinstance(other, Circle) and
+                self.center == other.center and
+                self.radius == other.radius)
 
 
 class PointMixin(object):
