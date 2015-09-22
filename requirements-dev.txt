@@ -2,3 +2,4 @@ django
 mock
 psycopg2
 six
+tox
