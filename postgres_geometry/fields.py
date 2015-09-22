@@ -3,8 +3,8 @@ import collections
 import functools
 
 from django.core.exceptions import FieldError
-from django.utils.six import with_metaclass
 from django.db import models
+from django.contrib.postgres import lookups
 
 
 _FLOAT_RE = r'[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?'
@@ -75,17 +75,18 @@ class Point(object):
         return unicode(self.__str__())
 
     def __eq__(self, other):
-        return (isinstance(other, self.__class__)
-                and self.x == other.x
-                and self.y == other.y)
+        return (
+            isinstance(other, self.__class__) and
+            self.x == other.x and
+            self.y == other.y)
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __lt__(self, other):
-        return (isinstance(other, self.__class__)
-                and self.x <= other.x
-                and self.y <= other.y)
+        return (isinstance(other, self.__class__) and
+                self.x <= other.x and
+                self.y <= other.y)
 
 
 class Circle(object):
@@ -150,34 +151,36 @@ class Circle(object):
             raise TypeError("Invalid set of arguments {}".format(args))
 
     def __eq__(self, other):
-        return (isinstance(other, Circle)
-                and self.center == other.center
-                and self.radius == other.radius)
+        return (isinstance(other, Circle) and
+                self.center == other.center and
+                self.radius == other.radius)
 
 
 class PointMixin(object):
 
     SPLIT_RE = re.compile(r"\((?!\().*?\)")
 
-    def to_python(self, values):
-        if values is None:
+    def from_db_value(self, value, expression, connection, context):
+        return self.to_python(value)
+
+    def to_python(self, value):
+        if value is None:
             return None
 
-        if not isinstance(values, collections.Iterable):
-            raise TypeError("Value {} is not iterable".format(values))
+        if not isinstance(value, collections.Iterable):
+            raise TypeError("Value {} is not iterable".format(value))
 
-        if all(isinstance(v, Point) for v in values):
-            return values
+        if all(isinstance(v, Point) for v in value):
+            return value
 
         return list(
-            Point.from_string(v) for v in re.findall(self.SPLIT_RE, values))
+            Point.from_string(v) for v in re.findall(self.SPLIT_RE, value))
 
     def _get_prep_value(self, values):
         return ','.join(str(v) for v in values) if values else None
 
 
-class SegmentPathField(PointMixin,
-                       with_metaclass(models.SubfieldBase, models.Field)):
+class SegmentPathField(PointMixin, models.Field):
     """
     Field to store a path; needs at least two set of points
     """
@@ -201,10 +204,11 @@ class SegmentPathField(PointMixin,
         return NotImplementedError(self)
 
 
-class PolygonField(PointMixin,
-                   with_metaclass(models.SubfieldBase, models.Field)):
+class PolygonField(PointMixin, models.Field):
     """
     Field to store a polygon; needs at least three set of points
+
+    Supports ``contains`` lookup to test if a point is part of the polygon.
     """
 
     @require_postgres
@@ -222,11 +226,19 @@ class PolygonField(PointMixin,
 
         return '({})'.format(values) if values else None
 
-    def get_prep_lookup(self, lookup_type, value):
-        return NotImplementedError(self)
+
+class DataContainsPoint(lookups.DataContains):
+    """ Takes a point as rhs and tests if lhs contains that point. """
+    def process_rhs(self, qn, connection):
+        rhs, rhs_params = super(DataContainsPoint, self).process_rhs(
+            qn, connection)
+        return 'point %s', [str(param) for param in rhs_params]
 
 
-class PointField(with_metaclass(models.SubfieldBase, models.Field)):
+PolygonField.register_lookup(DataContainsPoint)
+
+
+class PointField(models.Field):
     """
     Field to store a single point in space
     """
@@ -235,8 +247,13 @@ class PointField(with_metaclass(models.SubfieldBase, models.Field)):
     def db_type(self, connection):
         return 'point'
 
+    def from_db_value(self, value, expression, connection, context):
+        return self.to_python(value)
+
     def to_python(self, value):
-        if isinstance(value, Point) or value is None:
+        if value is None:
+            return value
+        if isinstance(value, Point):
             return value
 
         return Point.from_string(value)
@@ -248,8 +265,7 @@ class PointField(with_metaclass(models.SubfieldBase, models.Field)):
         return NotImplementedError(self)
 
 
-class SegmentField(PointMixin,
-                   with_metaclass(models.SubfieldBase, models.Field)):
+class SegmentField(PointMixin, models.Field):
     """
     Field to store a path; needs exactly two set of points
     """
@@ -268,7 +284,7 @@ class SegmentField(PointMixin,
         return NotImplementedError(self)
 
 
-class BoxField(PointMixin, with_metaclass(models.SubfieldBase, models.Field)):
+class BoxField(PointMixin, models.Field):
     """
     Field to store a box's definition.
 
@@ -291,7 +307,7 @@ class BoxField(PointMixin, with_metaclass(models.SubfieldBase, models.Field)):
         return NotImplementedError(self)
 
 
-class CircleField(with_metaclass(models.SubfieldBase, models.Field)):
+class CircleField(models.Field):
     """
     Field to store a circle's definition
     """

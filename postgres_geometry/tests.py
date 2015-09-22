@@ -178,6 +178,23 @@ class PolygonFieldTests(GeometryFieldTestsMixin, TestCase):
         with self.assertRaisesRegexp(ValueError, "Needs at minimum 3 points"):
             model.save()
 
+    def test_contains_lookup(self):
+        TestModel.objects.create(polygon=[
+            Point(1, 1),
+            Point(1, 5),
+            Point(5, 5),
+            Point(5, 1),
+            Point(1, 1)
+        ])
+        self.assertTrue(
+            TestModel.objects.filter(polygon__contains=Point(1, 1)).exists())
+        self.assertTrue(
+            TestModel.objects.filter(polygon__contains=Point(2, 2)).exists())
+        self.assertFalse(
+            TestModel.objects.filter(polygon__contains=Point(0, 0)).exists())
+        self.assertFalse(
+            TestModel.objects.filter(polygon__contains=Point(-2, -2)).exists())
+
 
 class PointFieldTests(GeometryFieldTestsMixin, TestCase):
 
