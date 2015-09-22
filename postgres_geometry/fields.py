@@ -158,18 +158,21 @@ class PointMixin(object):
 
     SPLIT_RE = re.compile(r"\((?!\().*?\)")
 
-    def to_python(self, values):
-        if values is None:
+    def from_db_value(self, value, expression, connection, context):
+        return self.to_python(value)
+
+    def to_python(self, value):
+        if value is None:
             return None
 
-        if not isinstance(values, collections.Iterable):
-            raise TypeError("Value {} is not iterable".format(values))
+        if not isinstance(value, collections.Iterable):
+            raise TypeError("Value {} is not iterable".format(value))
 
-        if all(isinstance(v, Point) for v in values):
-            return values
+        if all(isinstance(v, Point) for v in value):
+            return value
 
         return list(
-            Point.from_string(v) for v in re.findall(self.SPLIT_RE, values))
+            Point.from_string(v) for v in re.findall(self.SPLIT_RE, value))
 
     def _get_prep_value(self, values):
         return ','.join(str(v) for v in values) if values else None
@@ -232,8 +235,13 @@ class PointField(models.Field):
     def db_type(self, connection):
         return 'point'
 
+    def from_db_value(self, value, expression, connection, context):
+        return self.to_python(value)
+
     def to_python(self, value):
-        if isinstance(value, Point) or value is None:
+        if value is None:
+            return value
+        if isinstance(value, Point):
             return value
 
         return Point.from_string(value)
