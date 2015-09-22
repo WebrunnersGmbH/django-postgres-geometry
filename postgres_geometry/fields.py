@@ -4,6 +4,7 @@ import functools
 
 from django.core.exceptions import FieldError
 from django.db import models
+from django.contrib.postgres import lookups
 
 
 _FLOAT_RE = r'[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?'
@@ -206,6 +207,8 @@ class SegmentPathField(PointMixin, models.Field):
 class PolygonField(PointMixin, models.Field):
     """
     Field to store a polygon; needs at least three set of points
+
+    Supports ``contains`` lookup to test if a point is part of the polygon.
     """
 
     @require_postgres
@@ -223,8 +226,16 @@ class PolygonField(PointMixin, models.Field):
 
         return '({})'.format(values) if values else None
 
-    def get_prep_lookup(self, lookup_type, value):
-        return NotImplementedError(self)
+
+class DataContainsPoint(lookups.DataContains):
+    """ Takes a point as rhs and tests if lhs contains that point. """
+    def process_rhs(self, qn, connection):
+        rhs, rhs_params = super(DataContainsPoint, self).process_rhs(
+            qn, connection)
+        return 'point %s', [str(param) for param in rhs_params]
+
+
+PolygonField.register_lookup(DataContainsPoint)
 
 
 class PointField(models.Field):
