@@ -3,7 +3,6 @@ import collections
 import functools
 
 from django.core.exceptions import FieldError
-from django.utils.six import with_metaclass
 from django.db import models
 
 
@@ -176,8 +175,7 @@ class PointMixin(object):
         return ','.join(str(v) for v in values) if values else None
 
 
-class SegmentPathField(PointMixin,
-                       with_metaclass(models.SubfieldBase, models.Field)):
+class SegmentPathField(PointMixin, models.Field):
     """
     Field to store a path; needs at least two set of points
     """
@@ -201,8 +199,7 @@ class SegmentPathField(PointMixin,
         return NotImplementedError(self)
 
 
-class PolygonField(PointMixin,
-                   with_metaclass(models.SubfieldBase, models.Field)):
+class PolygonField(PointMixin, models.Field):
     """
     Field to store a polygon; needs at least three set of points
     """
@@ -226,7 +223,7 @@ class PolygonField(PointMixin,
         return NotImplementedError(self)
 
 
-class PointField(with_metaclass(models.SubfieldBase, models.Field)):
+class PointField(models.Field):
     """
     Field to store a single point in space
     """
@@ -248,8 +245,7 @@ class PointField(with_metaclass(models.SubfieldBase, models.Field)):
         return NotImplementedError(self)
 
 
-class SegmentField(PointMixin,
-                   with_metaclass(models.SubfieldBase, models.Field)):
+class SegmentField(PointMixin, models.Field):
     """
     Field to store a path; needs exactly two set of points
     """
@@ -268,7 +264,7 @@ class SegmentField(PointMixin,
         return NotImplementedError(self)
 
 
-class BoxField(PointMixin, with_metaclass(models.SubfieldBase, models.Field)):
+class BoxField(PointMixin, models.Field):
     """
     Field to store a box's definition.
 
@@ -291,7 +287,7 @@ class BoxField(PointMixin, with_metaclass(models.SubfieldBase, models.Field)):
         return NotImplementedError(self)
 
 
-class CircleField(with_metaclass(models.SubfieldBase, models.Field)):
+class CircleField(models.Field):
     """
     Field to store a circle's definition
     """
