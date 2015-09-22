@@ -58,6 +58,11 @@ Todo
 Changelog
 =========
 
+(not released yet)
+------------------
+
+- Add `contains` lookup for `PolygonField`.
+
 0.1.3
 -----
 
