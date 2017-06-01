@@ -94,7 +94,7 @@ class Circle(object):
     Describe a circle with center and radius
     """
 
-    CIRCLE_RE = r'<{0},\s(?P<r>{1})>'.format(Point.POINT_RE, _FLOAT_RE)
+    CIRCLE_RE = r'<{0},\s*(?P<r>{1})>'.format(Point.POINT_RE, _FLOAT_RE)
 
     @staticmethod
     def from_string(value):
@@ -324,7 +324,7 @@ class CircleField(models.Field):
 
     def get_prep_value(self, value):
         if value:
-            return "<{0.center.x}, {0.center.y}}, {0.radius}>".format(value)
+            return "<({0.center.x}, {0.center.y}), {0.radius}>".format(value)
 
         return None
 
