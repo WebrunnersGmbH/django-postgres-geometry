@@ -190,6 +190,9 @@ class SegmentPathField(PointMixin, models.Field):
         return 'path'
 
     def get_prep_value(self, values):
+        if isinstance(values, Point):
+            return values
+
         if values:
             values = tuple(values)
 
@@ -216,6 +219,9 @@ class PolygonField(PointMixin, models.Field):
         return 'polygon'
 
     def get_prep_value(self, values):
+        if isinstance(values, Point):
+            return values
+
         if values:
             values = tuple(values)
 
@@ -275,6 +281,9 @@ class SegmentField(PointMixin, models.Field):
         return 'lseg'
 
     def get_prep_value(self, value):
+        if isinstance(value, Point):
+            return value
+
         if value and len(value) != 2:
             raise ValueError("Segment needs exactly 2 points")
 
